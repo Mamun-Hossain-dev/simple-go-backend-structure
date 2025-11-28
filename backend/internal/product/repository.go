@@ -1,55 +1,92 @@
 package product
 
+import (
+	"errors"
+
+	"github.com/jmoiron/sqlx"
+)
+
 type ProductRepository interface {
-	GetAll() []Product
-	GetByID(id int) *Product
-	Store(p Product) Product
-	Update(id int, p Product) *Product
-	Delete(id int) *Product
+	GetAll() ([]Product, error)
+	GetByID(id int) (*Product, error)
+	Store(p Product) (*Product, error)
+	Update(id int, p Product) (*Product, error)
+	Delete(id int) (*Product, error)
 }
 
-type productRepo struct{}
-
-func NewProductRepository() ProductRepository {
-	return &productRepo{}
+type productRepo struct {
+	db *sqlx.DB
 }
 
-func (r *productRepo) GetAll() []Product {
-	return ProductList
-}
-
-func (r *productRepo) GetByID(id int) *Product {
-	for _, p := range ProductList {
-		if p.ID == id {
-			return &p
-		}
+func NewProductRepository(db *sqlx.DB) ProductRepository {
+	return &productRepo{
+		db: db,
 	}
-	return nil
 }
 
-func (r *productRepo) Store(p Product) Product {
-	p.ID = len(ProductList) + 1
-	ProductList = append(ProductList, p)
-	return p
-}
-
-func (r *productRepo) Update(id int, p Product) *Product {
-	for i, prod := range ProductList {
-		if prod.ID == id {
-			ProductList[i] = p
-			return &ProductList[i]
-		}
+func (r *productRepo) GetAll() ([]Product, error) {
+	var products []Product
+	err := r.db.Select(&products, "SELECT * FROM products")
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	return products, nil
 }
 
-func (r *productRepo) Delete(id int) *Product {
-	for i, p := range ProductList {
-		if p.ID == id {
-			deletedProduct := p
-			ProductList = append(ProductList[:i], ProductList[i+1:]...)
-			return &deletedProduct
-		}
+func (r *productRepo) GetByID(id int) (*Product, error) {
+	query := `SELECT * FROM products WHERE id=$1`
+
+	var p Product
+	err := r.db.Get(&p, query, id)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	return &p, nil
+}
+
+func (r *productRepo) Store(p Product) (*Product, error) {
+	query := `
+	INSERT INTO products (title, description, price, img_url) 
+	VALUES ($1, $2, $3, $4)
+	RETURNING id, title, description, price, img_url
+	`
+
+	var createdProduct Product
+
+	err := r.db.Get(&createdProduct, query, p.Title, p.Description, p.Price, p.ImgUrl)
+	if err != nil {
+		return nil, err
+	}
+	return &createdProduct, nil
+}
+
+func (r *productRepo) Update(id int, p Product) (*Product, error) {
+	query := `
+	UPDATE products 
+	SET title=$1, description=$2, price=$3, img_url=$4, updated_at=NOW()
+	WHERE id=$5
+	RETURNING id, title, description, price, 
+	`
+
+	var updated Product
+	err := r.db.Get(&updated, query, p.Title, p.Description, p.Price, p.ImgUrl, id)
+	if err != nil {
+		return nil, errors.New("product not found")
+	}
+	return &updated, nil
+}
+
+func (r *productRepo) Delete(id int) (*Product, error) {
+	query := `
+	DELETE FROM products
+	WHERE id=$1 
+	RETURNING id, title, description, price, img_url
+	`
+
+	var deleted Product
+	err := r.db.Get(&deleted, query, id)
+	if err != nil {
+		return nil, errors.New("product not found")
+	}
+	return &deleted, nil
 }

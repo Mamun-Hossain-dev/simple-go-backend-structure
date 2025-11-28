@@ -18,11 +18,18 @@ func NewProductHandler(service ProductService) *ProductHandler {
 
 // All Products
 func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
-	data := h.service.GetProducts()
+	data, err := h.service.GetProducts()
+	if err != nil {
+		http.Error(w, "products not found", http.StatusNotFound)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
 	response := Response{
 		Message: "Products retrieved successfully",
 		Data:    data,
 	}
+
 	utils.HandleSendData(w, response, http.StatusOK)
 }
 
@@ -42,6 +49,8 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	response := ProductResponse{
 		Message: "Product retrieved successfully",
 		Data:    *p,
@@ -57,10 +66,17 @@ func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdProduct := h.service.CreateProduct(newProduct)
+	createdProduct, err := h.service.CreateProduct(newProduct)
+	if err != nil {
+		http.Error(w, "Product not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
 	response := ProductResponse{
 		Message: "Product created successfully",
-		Data:    createdProduct,
+		Data:    *createdProduct,
 	}
 	utils.HandleSendData(w, response, http.StatusCreated)
 }
@@ -86,6 +102,8 @@ func (h *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	response := ProductResponse{
 		Message: "Product updated successfully",
 		Data:    *updated,
@@ -107,6 +125,8 @@ func (h *ProductHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Product not found", http.StatusNotFound)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 
 	response := ProductResponse{
 		Message: "Product deleted successfully",

@@ -5,12 +5,14 @@ import (
 
 	"ecommerce/internal/product"
 	"ecommerce/middlewares"
+
+	"github.com/jmoiron/sqlx"
 )
 
-func ProductRouter() *http.ServeMux {
+func ProductRouter(db *sqlx.DB) *http.ServeMux {
 	router := http.NewServeMux()
 
-	repo := product.NewProductRepository()
+	repo := product.NewProductRepository(db)
 	service := product.NewProductService(repo)
 	handler := product.NewProductHandler(service)
 

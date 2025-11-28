@@ -23,17 +23,19 @@ func (s *userService) RegisterUser(cu CreateUser) (User, error) {
 		LastName:  cu.LastName,
 		Email:     cu.Email,
 		Password:  cu.Password,
-		IsAdmin:   false,
 	}
 
-	createdUser := s.repo.StoreUser(u)
+	createdUser, err := s.repo.StoreUser(u)
+	if err != nil {
+		return User{}, err
+	}
 
 	return createdUser, nil
 }
 
 func (s *userService) LoginUser(lu LoggedUser) (*User, error) {
-	user := s.repo.Find(lu.Email, lu.Password)
-	if user == nil {
+	user, err := s.repo.Find(lu.Email, lu.Password)
+	if err != nil {
 		return nil, fmt.Errorf("invalid email or password")
 	}
 	return user, nil
