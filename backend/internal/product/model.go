@@ -6,7 +6,6 @@ type Product struct {
 	Description string  `json:"description" db:"description"`
 	Price       float64 `json:"price" db:"price"`
 	ImgUrl      string  `json:"imageUrl" db:"img_url"`
-	CreatedAt   string  `json:"createdAt" db:"created_at"`
 }
 
 type Response struct {

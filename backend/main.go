@@ -32,9 +32,14 @@ func main() {
 	// ----------------------------
 	userRouter := routes.UsersRouter(db, cfg)
 
+	// Redirect /api/users → /api/users/
+	mainMux.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/api/users/", http.StatusTemporaryRedirect)
+	})
+
+	// Single handler for all subroutes
 	mainMux.Handle("/api/users/",
 		utils.ChainMiddlewares(
-			// FIX: strip "/api/users/" OR "/api/users"
 			http.StripPrefix("/api/users", userRouter),
 			middlewares.CorsMiddleware,
 			middlewares.LoggingMiddleware,
@@ -45,6 +50,11 @@ func main() {
 	// PRODUCTS ROUTER
 	// ----------------------------
 	productRouter := routes.ProductRouter(db)
+
+	// redirect router
+	mainMux.HandleFunc("/api/products", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/api/products/", http.StatusTemporaryRedirect)
+	})
 
 	mainMux.Handle("/api/products/",
 		utils.ChainMiddlewares(

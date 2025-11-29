@@ -2,6 +2,7 @@ package product
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -26,7 +27,7 @@ func NewProductRepository(db *sqlx.DB) ProductRepository {
 
 func (r *productRepo) GetAll() ([]Product, error) {
 	var products []Product
-	err := r.db.Select(&products, "SELECT * FROM products")
+	err := r.db.Select(&products, "SELECT * FROM products;")
 	if err != nil {
 		return nil, err
 	}
@@ -63,14 +64,15 @@ func (r *productRepo) Store(p Product) (*Product, error) {
 func (r *productRepo) Update(id int, p Product) (*Product, error) {
 	query := `
 	UPDATE products 
-	SET title=$1, description=$2, price=$3, img_url=$4, updated_at=NOW()
+	SET title=$1, description=$2, price=$3, img_url=$4
 	WHERE id=$5
-	RETURNING id, title, description, price, 
+	RETURNING id, title, description, price, img_url 
 	`
 
 	var updated Product
 	err := r.db.Get(&updated, query, p.Title, p.Description, p.Price, p.ImgUrl, id)
 	if err != nil {
+		fmt.Println(err)
 		return nil, errors.New("product not found")
 	}
 	return &updated, nil
